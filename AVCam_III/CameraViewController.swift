@@ -10,7 +10,7 @@ import UIKit
 import AVFoundation
 import Photos
 
-class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UIGestureRecognizerDelegate {
+class CameraViewController: UIViewController, UIGestureRecognizerDelegate {
 	// MARK: View Controller Life Cycle
     var controllerDelegate: NavigationControllerEx!
     var previewView: PreviewView!
@@ -143,31 +143,10 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 		super.viewWillDisappear(animated)
 	}
 	
-    override var shouldAutorotate: Bool {
-		// Disable autorotation of the interface when recording is in progress.
-		if let movieFileOutput = movieFileOutput {
-			return !movieFileOutput.isRecording
-		}
-		return true
-	}
-	
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-		return .all
+		return .portrait
 	}
 	
-	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-		super.viewWillTransition(to: size, with: coordinator)
-		
-		if let videoPreviewLayerConnection = previewView.videoPreviewLayer.connection {
-			let deviceOrientation = UIDevice.current.orientation
-			guard let newVideoOrientation = deviceOrientation.videoOrientation, deviceOrientation.isPortrait || deviceOrientation.isLandscape else {
-				return
-			}
-			
-			videoPreviewLayerConnection.videoOrientation = newVideoOrientation
-		}
-	}
-
 	// MARK: Session Management
 	
 	private enum SessionSetupResult {
@@ -222,28 +201,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 				self.videoDeviceInput = videoDeviceInput
                 videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
 
-				
-				DispatchQueue.main.async {
-					/*
-						Why are we dispatching this to the main queue?
-						Because AVCaptureVideoPreviewLayer is the backing layer for PreviewView and UIView
-						can only be manipulated on the main thread.
-						Note: As an exception to the above rule, it is not necessary to serialize video orientation changes
-						on the AVCaptureVideoPreviewLayer’s connection with other session manipulation.
-					
-						Use the status bar orientation as the initial video orientation. Subsequent orientation changes are
-						handled by CameraViewController.viewWillTransition(to:with:).
-					*/
-					let statusBarOrientation = UIApplication.shared.statusBarOrientation
-					var initialVideoOrientation: AVCaptureVideoOrientation = .portrait
-					if statusBarOrientation != .unknown {
-						if let videoOrientation = statusBarOrientation.videoOrientation {
-							initialVideoOrientation = videoOrientation
-						}
-					}
-					
-					self.previewView.videoPreviewLayer.connection.videoOrientation = initialVideoOrientation
-				}
+                self.previewView.videoPreviewLayer.connection.videoOrientation = .portrait
 			}
 			else {
 				print("Could not add video device input to the session")
@@ -259,30 +217,11 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 			return
 		}
 		
-		// Add audio input.
-		do {
-            let audioDevice = AVCaptureDevice.defaultDevice(withMediaType: AVMediaTypeAudio)
-			let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
-			
-			if session.canAddInput(audioDeviceInput) {
-				session.addInput(audioDeviceInput)
-			}
-			else {
-				print("Could not add audio device input to the session")
-			}
-		}
-		catch {
-			print("Could not create audio device input: \(error)")
-		}
-		
 		// Add photo output.
 		if session.canAddOutput(photoOutput)
 		{
 			session.addOutput(photoOutput)
-			
 			photoOutput.isHighResolutionCaptureEnabled = true
-			photoOutput.isLivePhotoCaptureEnabled = photoOutput.isLivePhotoCaptureSupported
-			livePhotoMode = photoOutput.isLivePhotoCaptureSupported ? .on : .off
 		}
 		else {
 			print("Could not add photo output to the session")
@@ -294,7 +233,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 		session.commitConfiguration()
 	}
 	
-	@IBAction private func resumeInterruptedSession(_ resumeButton: UIButton)
+	private func resumeInterruptedSession(_ resumeButton: UIButton)
 	{
 		sessionQueue.async { [unowned self] in
 			/*
@@ -317,76 +256,12 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 			}
 		}
 	}
-	
-	private enum CaptureMode: Int {
-		case photo = 0
-		case movie = 1
-	}
-
-//	@IBOutlet private weak var captureModeControl: UISegmentedControl!
-	
-	@IBAction private func toggleCaptureMode(_ captureModeControl: UISegmentedControl) {
-		if captureModeControl.selectedSegmentIndex == CaptureMode.photo.rawValue {
-//			recordButton.isEnabled = false
-			
-			sessionQueue.async { [unowned self] in
-				/*
-					Remove the AVCaptureMovieFileOutput from the session because movie recording is
-					not supported with AVCaptureSessionPresetPhoto. Additionally, Live Photo
-					capture is not supported when an AVCaptureMovieFileOutput is connected to the session.
-				*/
-				self.session.beginConfiguration()
-				self.session.removeOutput(self.movieFileOutput)
-				self.session.sessionPreset = AVCaptureSessionPresetPhoto
-				self.session.commitConfiguration()
-				
-				self.movieFileOutput = nil
-				
-				if self.photoOutput.isLivePhotoCaptureSupported {
-					self.photoOutput.isLivePhotoCaptureEnabled = true
-					
-				}
-			}
-		}
-		else if captureModeControl.selectedSegmentIndex == CaptureMode.movie.rawValue
-		{
-//			livePhotoModeButton.isHidden = true
-			
-			sessionQueue.async { [unowned self] in
- 				let movieFileOutput = AVCaptureMovieFileOutput()
-				
-				if self.session.canAddOutput(movieFileOutput) {
-					self.session.beginConfiguration()
-					self.session.addOutput(movieFileOutput)
-					self.session.sessionPreset = AVCaptureSessionPresetHigh
-					if let connection = movieFileOutput.connection(withMediaType: AVMediaTypeVideo) {
-						if connection.isVideoStabilizationSupported {
-							connection.preferredVideoStabilizationMode = .auto
-						}
-					}
-					self.session.commitConfiguration()
-					
-					self.movieFileOutput = movieFileOutput
-					
-				}
-			}
-		}
-	}
-	
+		
 	// MARK: Device Configuration
 	
-//	@IBOutlet private weak var cameraButton: UIButton!
+	private let videoDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .unspecified)!
 	
-//	@IBOutlet private weak var cameraUnavailableLabel: UILabel!
-	
-	private let videoDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera, .builtInDuoCamera], mediaType: AVMediaTypeVideo, position: .unspecified)!
-	
-	@IBAction private func changeCamera(_ cameraButton: UIButton) {
-//		cameraButton.isEnabled = false
-//		recordButton.isEnabled = false
-//		photoButton.isEnabled = false
-//		livePhotoModeButton.isEnabled = false
-//		captureModeControl.isEnabled = false
+	private func changeCamera(_ cameraButton: UIButton) {
 		
 		sessionQueue.async { [unowned self] in
 			let currentVideoDevice = self.videoDeviceInput.device
@@ -398,7 +273,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 			switch currentPosition {
 				case .unspecified, .front:
 					preferredPosition = .back
-					preferredDeviceType = .builtInDuoCamera
+					preferredDeviceType = .builtInWideAngleCamera
 				
 				case .back:
 					preferredPosition = .front
@@ -440,20 +315,6 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 					else {
 						self.session.addInput(self.videoDeviceInput);
 					}
-					
-					if let connection = self.movieFileOutput?.connection(withMediaType: AVMediaTypeVideo) {
-						if connection.isVideoStabilizationSupported {
-							connection.preferredVideoStabilizationMode = .auto
-						}
-					}
-					
-					/*
-						Set Live Photo capture enabled if it is supported. When changing cameras, the
-						`isLivePhotoCaptureEnabled` property of the AVCapturePhotoOutput gets set to NO when
-						a video device is disconnected from the session. After the new video device is
-						added to the session, re-enable Live Photo capture on the AVCapturePhotoOutput if it is supported.
-					*/
-					self.photoOutput.isLivePhotoCaptureEnabled = self.photoOutput.isLivePhotoCaptureSupported;
 					
 					self.session.commitConfiguration()
 				}
@@ -507,15 +368,13 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 	
 	private var inProgressPhotoCaptureDelegates = [Int64 : PhotoCaptureDelegate]()
 	
-//	@IBOutlet private weak var photoButton: UIButton!
-	
 	func capturePhoto() {
 		/*
 			Retrieve the video preview layer's video orientation on the main queue before
 			entering the session queue. We do this to ensure UI elements are accessed on
 			the main thread and session configuration is done on the session queue.
 		*/
-		let videoPreviewLayerOrientation = previewView.videoPreviewLayer.connection.videoOrientation
+		let videoPreviewLayerOrientation = previewView.videoPreviewLayer.connection.videoOrientation        // should always be .portrait
 		
 		sessionQueue.async {
 			// Update the photo output's connection to match the video orientation of the video preview layer.
@@ -530,13 +389,8 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 			if photoSettings.availablePreviewPhotoPixelFormatTypes.count > 0 {
 				photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String : photoSettings.availablePreviewPhotoPixelFormatTypes.first!]
 			}
-			if self.livePhotoMode == .on && self.photoOutput.isLivePhotoCaptureSupported { // Live Photo capture is not supported in movie mode.
-				let livePhotoMovieFileName = NSUUID().uuidString
-				let livePhotoMovieFilePath = (NSTemporaryDirectory() as NSString).appendingPathComponent((livePhotoMovieFileName as NSString).appendingPathExtension("mov")!)
-				photoSettings.livePhotoMovieFileURL = URL(fileURLWithPath: livePhotoMovieFilePath)
-			}
-			
-			// Use a separate object for the photo capture delegate to isolate each capture life cycle.
+
+            // Use a separate object for the photo capture delegate to isolate each capture life cycle.
 			let photoCaptureDelegate = PhotoCaptureDelegate(with: photoSettings, willCapturePhotoAnimation: {
 					DispatchQueue.main.async { [unowned self] in
 						self.previewView.videoPreviewLayer.opacity = 0
@@ -544,23 +398,6 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 							self.previewView.videoPreviewLayer.opacity = 1
 						}
 					}
-				}, capturingLivePhoto: { capturing in
-					/*
-						Because Live Photo captures can overlap, we need to keep track of the
-						number of in progress Live Photo captures to ensure that the
-						Live Photo label stays visible during these captures.
-					*/
-					self.sessionQueue.async { [unowned self] in
-						if capturing {
-							self.inProgressLivePhotoCapturesCount += 1
-						}
-						else {
-							self.inProgressLivePhotoCapturesCount -= 1
-						}
-						
-						let inProgressLivePhotoCapturesCount = self.inProgressLivePhotoCapturesCount
-						}
-
 				}, completed: { [unowned self] photoCaptureDelegate in
 					// When the capture is complete, remove a reference to the photo capture delegate so it can be deallocated.
 					self.sessionQueue.async { [unowned self] in
@@ -578,157 +415,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 			self.photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureDelegate)
 		}
 	}
-	
-	private enum LivePhotoMode {
-		case on
-		case off
-	}
-	
-	private var livePhotoMode: LivePhotoMode = .off
-	
-//	@IBOutlet private weak var livePhotoModeButton: UIButton!
-	
-	@IBAction private func toggleLivePhotoMode(_ livePhotoModeButton: UIButton) {
-		sessionQueue.async { [unowned self] in
-			self.livePhotoMode = (self.livePhotoMode == .on) ? .off : .on
-			let livePhotoMode = self.livePhotoMode
-		}
-	}
-	
-	private var inProgressLivePhotoCapturesCount = 0
-	
-//	@IBOutlet var capturingLivePhotoLabel: UILabel!
-	
-	// MARK: Recording Movies
-	
-	private var movieFileOutput: AVCaptureMovieFileOutput? = nil
-	
-	private var backgroundRecordingID: UIBackgroundTaskIdentifier? = nil
-	
-//	@IBOutlet private weak var recordButton: UIButton!
-	
-//	@IBOutlet private weak var resumeButton: UIButton!
-	
-	@IBAction private func toggleMovieRecording(_ recordButton: UIButton) {
-		guard let movieFileOutput = self.movieFileOutput else {
-			return
-		}
 		
-		/*
-			Disable the Camera button until recording finishes, and disable
-			the Record button until recording starts or finishes.
-		
-			See the AVCaptureFileOutputRecordingDelegate methods.
-		*/
-		
-		/*
-			Retrieve the video preview layer's video orientation on the main queue
-			before entering the session queue. We do this to ensure UI elements are
-			accessed on the main thread and session configuration is done on the session queue.
-		*/
-		let videoPreviewLayerOrientation = previewView.videoPreviewLayer.connection.videoOrientation
-		
-		sessionQueue.async { [unowned self] in
-			if !movieFileOutput.isRecording {
-				if UIDevice.current.isMultitaskingSupported {
-					/*
-						Setup background task.
-						This is needed because the `capture(_:, didFinishRecordingToOutputFileAt:, fromConnections:, error:)`
-						callback is not received until AVCam returns to the foreground unless you request background execution time.
-						This also ensures that there will be time to write the file to the photo library when AVCam is backgrounded.
-						To conclude this background execution, endBackgroundTask(_:) is called in
-						`capture(_:, didFinishRecordingToOutputFileAt:, fromConnections:, error:)` after the recorded file has been saved.
-					*/
-					self.backgroundRecordingID = UIApplication.shared.beginBackgroundTask(expirationHandler: nil)
-				}
-				
-				// Update the orientation on the movie file output video connection before starting recording.
-				let movieFileOutputConnection = self.movieFileOutput?.connection(withMediaType: AVMediaTypeVideo)
-				movieFileOutputConnection?.videoOrientation = videoPreviewLayerOrientation
-				
-				// Start recording to a temporary file.
-				let outputFileName = NSUUID().uuidString
-				let outputFilePath = (NSTemporaryDirectory() as NSString).appendingPathComponent((outputFileName as NSString).appendingPathExtension("mov")!)
-				movieFileOutput.startRecording(toOutputFileURL: URL(fileURLWithPath: outputFilePath), recordingDelegate: self)
-			}
-			else {
-				movieFileOutput.stopRecording()
-			}
-		}
-	}
-	
-	func capture(_ captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAt fileURL: URL!, fromConnections connections: [Any]!) {
-		// Enable the Record button to let the user stop the recording.
-	}
-	
-    func capture(_ captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAt outputFileURL: URL!, fromConnections connections: [Any]!, error: Error!) {
-		/*
-			Note that currentBackgroundRecordingID is used to end the background task
-			associated with this recording. This allows a new recording to be started,
-			associated with a new UIBackgroundTaskIdentifier, once the movie file output's
-			`isRecording` property is back to false — which happens sometime after this method
-			returns.
-		
-			Note: Since we use a unique file path for each recording, a new recording will
-			not overwrite a recording currently being saved.
-		*/
-		func cleanup() {
-			let path = outputFileURL.path
-            if FileManager.default.fileExists(atPath: path) {
-                do {
-                    try FileManager.default.removeItem(atPath: path)
-                }
-                catch {
-                    print("Could not remove file at url: \(outputFileURL)")
-                }
-            }
-			
-			if let currentBackgroundRecordingID = backgroundRecordingID {
-				backgroundRecordingID = UIBackgroundTaskInvalid
-				
-				if currentBackgroundRecordingID != UIBackgroundTaskInvalid {
-					UIApplication.shared.endBackgroundTask(currentBackgroundRecordingID)
-				}
-			}
-		}
-		
-		var success = true
-		
-		if error != nil {
-			print("Movie file finishing error: \(error)")
-			success = (((error as NSError).userInfo[AVErrorRecordingSuccessfullyFinishedKey] as AnyObject).boolValue)!
-		}
-		
-		if success {
-			// Check authorization status.
-			PHPhotoLibrary.requestAuthorization { status in
-				if status == .authorized {
-					// Save the movie file to the photo library and cleanup.
-					PHPhotoLibrary.shared().performChanges({
-							let options = PHAssetResourceCreationOptions()
-							options.shouldMoveFile = true
-							let creationRequest = PHAssetCreationRequest.forAsset()
-							creationRequest.addResource(with: .video, fileURL: outputFileURL, options: options)
-						}, completionHandler: { success, error in
-							if !success {
-								print("Could not save movie to photo library: \(error)")
-							}
-							cleanup()
-						}
-					)
-				}
-				else {
-					cleanup()
-				}
-			}
-		}
-		else {
-			cleanup()
-		}
-		
-		// Enable the Camera and Record buttons to let the user switch camera and start another recording.
-	}
-	
 	// MARK: KVO and Notifications
 	
 	private var sessionRunningObserveContext = 0
@@ -764,9 +451,6 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
             if keyPath == "running" {
                 print("observed running")
                 guard let isSessionRunning = newValue?.boolValue else { return }
-//                let isLivePhotoCaptureSupported = photoOutput.isLivePhotoCaptureSupported
-//                let isLivePhotoCaptureEnabled = photoOutput.isLivePhotoCaptureEnabled
-			
             }
         } else if keyPath == "adjustingFocus" {
             if let something = change?[.newKey] as! Bool? {
@@ -776,7 +460,6 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
                     print("focused")
                 }
             }
-//            print("observed adjusting focus: \(something)")
         } else {
 			super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 		}
@@ -821,12 +504,10 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 		*/
 		if let userInfoValue = notification.userInfo?[AVCaptureSessionInterruptionReasonKey] as AnyObject?, let reasonIntegerValue = userInfoValue.integerValue, let reason = AVCaptureSessionInterruptionReason(rawValue: reasonIntegerValue) {
 			print("Capture session was interrupted with reason \(reason)")
-			
-			var showResumeButton = false
-			
+						
 			if reason == AVCaptureSessionInterruptionReason.audioDeviceInUseByAnotherClient || reason == AVCaptureSessionInterruptionReason.videoDeviceInUseByAnotherClient {
-				showResumeButton = true
-			}
+                // TODO
+            }
 		}
 	}
 	
@@ -836,6 +517,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 	}
 }
 
+/*
 extension UIDeviceOrientation {
     var videoOrientation: AVCaptureVideoOrientation? {
         switch self {
@@ -873,3 +555,4 @@ extension AVCaptureDeviceDiscoverySession {
 		return uniqueDevicePositions.count
 	}
 }
+ */
