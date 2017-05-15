@@ -220,6 +220,8 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 			if session.canAddInput(videoDeviceInput) {
 				session.addInput(videoDeviceInput)
 				self.videoDeviceInput = videoDeviceInput
+                videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
+
 				
 				DispatchQueue.main.async {
 					/*
@@ -427,6 +429,10 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 						NotificationCenter.default.removeObserver(self, name: Notification.Name("AVCaptureDeviceSubjectAreaDidChangeNotification"), object: currentVideoDevice!)
 						
 						NotificationCenter.default.addObserver(self, selector: #selector(self.subjectAreaDidChange), name: Notification.Name("AVCaptureDeviceSubjectAreaDidChangeNotification"), object: videoDeviceInput.device)
+                        
+                        print("adding adjustingFocus observation to videoDeviceInput")
+                        currentVideoDevice!.removeObserver(self, forKeyPath: "adjustingFocus")
+                        videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
 						
 						self.session.addInput(videoDeviceInput)
 						self.videoDeviceInput = videoDeviceInput
@@ -468,6 +474,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 		sessionQueue.async { [unowned self] in
 			if let device = self.videoDeviceInput.device {
 				do {
+                    print("focusing")
 					try device.lockForConfiguration()
 					
 					/*
@@ -502,7 +509,7 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 	
 //	@IBOutlet private weak var photoButton: UIButton!
 	
-	@IBAction private func capturePhoto(_ photoButton: UIButton) {
+	func capturePhoto() {
 		/*
 			Retrieve the video preview layer's video orientation on the main queue before
 			entering the session queue. We do this to ensure UI elements are accessed on
@@ -750,23 +757,27 @@ class CameraViewController: UIViewController, AVCaptureFileOutputRecordingDelega
 	}
 	
 	override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        print("value \(keyPath) observed")
 		if context == &sessionRunningObserveContext {
 			let newValue = change?[.newKey] as AnyObject?
-			guard let isSessionRunning = newValue?.boolValue else { return }
-			let isLivePhotoCaptureSupported = photoOutput.isLivePhotoCaptureSupported
-			let isLivePhotoCaptureEnabled = photoOutput.isLivePhotoCaptureEnabled
+            
+            if keyPath == "running" {
+                print("observed running")
+                guard let isSessionRunning = newValue?.boolValue else { return }
+//                let isLivePhotoCaptureSupported = photoOutput.isLivePhotoCaptureSupported
+//                let isLivePhotoCaptureEnabled = photoOutput.isLivePhotoCaptureEnabled
 			
-			DispatchQueue.main.async { [unowned self] in
-				// Only enable the ability to change camera if the device has more than one camera.
-//				self.cameraButton.isEnabled = isSessionRunning && self.videoDeviceDiscoverySession.uniqueDevicePositionsCount() > 1
-//				self.recordButton.isEnabled = isSessionRunning && self.movieFileOutput != nil
-//				self.photoButton.isEnabled = isSessionRunning
-//				self.captureModeControl.isEnabled = isSessionRunning
-//				self.livePhotoModeButton.isEnabled = isSessionRunning && isLivePhotoCaptureEnabled
-//				self.livePhotoModeButton.isHidden = !(isSessionRunning && isLivePhotoCaptureSupported)
-			}
-		}
-		else {
+            }
+        } else if keyPath == "adjustingFocus" {
+            if let something = change?[.newKey] as! Bool? {
+                if something {
+                    print("focusing")
+                } else {
+                    print("focused")
+                }
+            }
+//            print("observed adjusting focus: \(something)")
+        } else {
 			super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 		}
 	}
