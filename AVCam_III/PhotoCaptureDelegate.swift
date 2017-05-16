@@ -16,7 +16,8 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
 	
 	private let completed: (PhotoCaptureDelegate) -> ()
 	
-	private var photoData: Data? = nil
+	var photoData: Data? = nil
+    var displayImage: UIImage?
 	
 	init(with requestedPhotoSettings: AVCapturePhotoSettings, willCapturePhotoAnimation: @escaping () -> (), completed: @escaping (PhotoCaptureDelegate) -> ()) {
 		self.requestedPhotoSettings = requestedPhotoSettings
@@ -32,29 +33,32 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
 	}
 	
 	func capture(_ captureOutput: AVCapturePhotoOutput, willCapturePhotoForResolvedSettings resolvedSettings: AVCaptureResolvedPhotoSettings) {
+        print("resolvedSettings.previewDimensions = \(resolvedSettings.previewDimensions)")
 		willCapturePhotoAnimation()
 	}
 	
     func capture(_ captureOutput: AVCapturePhotoOutput, didFinishProcessingPhotoSampleBuffer photoSampleBuffer: CMSampleBuffer?, previewPhotoSampleBuffer: CMSampleBuffer?, resolvedSettings: AVCaptureResolvedPhotoSettings, bracketSettings: AVCaptureBracketedStillImageSettings?, error: Error?) {
 		if let photoSampleBuffer = photoSampleBuffer {
             photoData = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: photoSampleBuffer, previewPhotoSampleBuffer: previewPhotoSampleBuffer)
-		}
-		else {
+            if previewPhotoSampleBuffer != nil {
+                if let pixelBuffer = CMSampleBufferGetImageBuffer(previewPhotoSampleBuffer!) {
+                    let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+                    let context = CIContext()
+                    
+                    let imageRect = CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
+                    print("capture imageRect: \(imageRect)")
+                    print("UIScreen.main.scale: \(UIScreen.main.scale)")
+                    
+                    if let image = context.createCGImage(ciImage, from: imageRect) {
+//                        self.displayImage = UIImage(cgImage: image, scale: UIScreen.main.scale, orientation: .right)
+                        self.displayImage = UIImage(cgImage: image, scale: 1.0, orientation: .right)
+                    }
+                }
+            }
+        } else {
 			print("Error capturing photo: \(error)")
 			return
 		}
-	}
-	
-	func capture(_ captureOutput: AVCapturePhotoOutput, didFinishRecordingLivePhotoMovieForEventualFileAt outputFileURL: URL, resolvedSettings: AVCaptureResolvedPhotoSettings) {
-
-	}
-	
-    func capture(_ captureOutput: AVCapturePhotoOutput, didFinishProcessingLivePhotoToMovieFileAt outputFileURL: URL, duration: CMTime, photoDisplay photoDisplayTime: CMTime, resolvedSettings: AVCaptureResolvedPhotoSettings, error: Error?) {
-		if let _ = error {
-			print("Error processing live photo companion movie: \(error)")
-			return
-		}
-		
 	}
 	
     func capture(_ captureOutput: AVCapturePhotoOutput, didFinishCaptureForResolvedSettings resolvedSettings: AVCaptureResolvedPhotoSettings, error: Error?) {

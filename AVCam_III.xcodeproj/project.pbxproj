@@ -18,8 +18,11 @@
 		C39B04F11EC7FD6800EFCD49 /* NavigationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B04F01EC7FD6800EFCD49 /* NavigationViewController.swift */; };
 		C39B04F71EC8118900EFCD49 /* StarterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B04F61EC8118900EFCD49 /* StarterViewController.swift */; };
 		C39B04FC1EC8148000EFCD49 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B04F91EC8148000EFCD49 /* PreviewView.swift */; };
-		C39B04FD1EC8148000EFCD49 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B04FA1EC8148000EFCD49 /* CameraViewController.swift */; };
+		C39B04FD1EC8148000EFCD49 /* MoleMapperPhotoController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B04FA1EC8148000EFCD49 /* MoleMapperPhotoController.swift */; };
 		C39B04FE1EC8148000EFCD49 /* PhotoCaptureDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B04FB1EC8148000EFCD49 /* PhotoCaptureDelegate.swift */; };
+		C39B050A1ECAA36900EFCD49 /* ObjCViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C39B05091ECAA36900EFCD49 /* ObjCViewController.m */; };
+		C39B050C1ECAA4F900EFCD49 /* NavMMViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B050B1ECAA4F900EFCD49 /* NavMMViewController.swift */; };
+		C39B050E1ECBBFB500EFCD49 /* AcceptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39B050D1ECBBFB500EFCD49 /* AcceptViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,8 +39,13 @@
 		C39B04F01EC7FD6800EFCD49 /* NavigationViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NavigationViewController.swift; sourceTree = "<group>"; };
 		C39B04F61EC8118900EFCD49 /* StarterViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StarterViewController.swift; sourceTree = "<group>"; };
 		C39B04F91EC8148000EFCD49 /* PreviewView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
-		C39B04FA1EC8148000EFCD49 /* CameraViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
+		C39B04FA1EC8148000EFCD49 /* MoleMapperPhotoController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MoleMapperPhotoController.swift; sourceTree = "<group>"; };
 		C39B04FB1EC8148000EFCD49 /* PhotoCaptureDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCaptureDelegate.swift; sourceTree = "<group>"; };
+		C39B05071ECAA36900EFCD49 /* AVCam_III-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AVCam_III-Bridging-Header.h"; sourceTree = "<group>"; };
+		C39B05081ECAA36900EFCD49 /* ObjCViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ObjCViewController.h; sourceTree = "<group>"; };
+		C39B05091ECAA36900EFCD49 /* ObjCViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ObjCViewController.m; sourceTree = "<group>"; };
+		C39B050B1ECAA4F900EFCD49 /* NavMMViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NavMMViewController.swift; sourceTree = "<group>"; };
+		C39B050D1ECBBFB500EFCD49 /* AcceptViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AcceptViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,8 +81,11 @@
 				C39B04F81EC8141C00EFCD49 /* MMPhoto */,
 				C39B04D71EC7F8BB00EFCD49 /* AppDelegate.swift */,
 				C39B04D91EC7F8BB00EFCD49 /* ViewController.swift */,
+				C39B050B1ECAA4F900EFCD49 /* NavMMViewController.swift */,
 				C39B04F01EC7FD6800EFCD49 /* NavigationViewController.swift */,
 				C39B04DB1EC7F8BB00EFCD49 /* Main.storyboard */,
+				C39B05081ECAA36900EFCD49 /* ObjCViewController.h */,
+				C39B05091ECAA36900EFCD49 /* ObjCViewController.m */,
 				C39B04F61EC8118900EFCD49 /* StarterViewController.swift */,
 				C39B04EC1EC7FC3000EFCD49 /* ThirdViewController.swift */,
 				C39B04EE1EC7FC4600EFCD49 /* SecondViewController.swift */,
@@ -82,6 +93,7 @@
 				C39B04E31EC7F8BB00EFCD49 /* LaunchScreen.storyboard */,
 				C39B04E61EC7F8BB00EFCD49 /* Info.plist */,
 				C39B04DE1EC7F8BB00EFCD49 /* AVCam_III.xcdatamodeld */,
+				C39B05071ECAA36900EFCD49 /* AVCam_III-Bridging-Header.h */,
 			);
 			path = AVCam_III;
 			sourceTree = "<group>";
@@ -90,7 +102,8 @@
 			isa = PBXGroup;
 			children = (
 				C39B04F91EC8148000EFCD49 /* PreviewView.swift */,
-				C39B04FA1EC8148000EFCD49 /* CameraViewController.swift */,
+				C39B04FA1EC8148000EFCD49 /* MoleMapperPhotoController.swift */,
+				C39B050D1ECBBFB500EFCD49 /* AcceptViewController.swift */,
 				C39B04FB1EC8148000EFCD49 /* PhotoCaptureDelegate.swift */,
 			);
 			name = MMPhoto;
@@ -129,6 +142,7 @@
 					C39B04D31EC7F8BB00EFCD49 = {
 						CreatedOnToolsVersion = 8.2.1;
 						DevelopmentTeam = 58TV7AA4JA;
+						LastSwiftMigration = 0820;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -170,15 +184,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				C39B04F11EC7FD6800EFCD49 /* NavigationViewController.swift in Sources */,
+				C39B050E1ECBBFB500EFCD49 /* AcceptViewController.swift in Sources */,
 				C39B04FC1EC8148000EFCD49 /* PreviewView.swift in Sources */,
+				C39B050C1ECAA4F900EFCD49 /* NavMMViewController.swift in Sources */,
 				C39B04E01EC7F8BB00EFCD49 /* AVCam_III.xcdatamodeld in Sources */,
+				C39B050A1ECAA36900EFCD49 /* ObjCViewController.m in Sources */,
 				C39B04F71EC8118900EFCD49 /* StarterViewController.swift in Sources */,
 				C39B04DA1EC7F8BB00EFCD49 /* ViewController.swift in Sources */,
 				C39B04ED1EC7FC3000EFCD49 /* ThirdViewController.swift in Sources */,
 				C39B04EF1EC7FC4600EFCD49 /* SecondViewController.swift in Sources */,
 				C39B04D81EC7F8BB00EFCD49 /* AppDelegate.swift in Sources */,
 				C39B04FE1EC8148000EFCD49 /* PhotoCaptureDelegate.swift in Sources */,
-				C39B04FD1EC8148000EFCD49 /* CameraViewController.swift in Sources */,
+				C39B04FD1EC8148000EFCD49 /* MoleMapperPhotoController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,11 +316,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				DEVELOPMENT_TEAM = 58TV7AA4JA;
 				INFOPLIST_FILE = AVCam_III/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.marcad.apps.AVCam-III";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "AVCam_III/AVCam_III-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
@@ -312,11 +332,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				DEVELOPMENT_TEAM = 58TV7AA4JA;
 				INFOPLIST_FILE = AVCam_III/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.marcad.apps.AVCam-III";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "AVCam_III/AVCam_III-Bridging-Header.h";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Release;

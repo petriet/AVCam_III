@@ -1,39 +1,29 @@
 //
-//  ThirdViewController.swift
+//  NavMMViewController.swift
 //  AVCam_III
 //
-//  Created by Tracy Petrie on 5/13/17.
+//  Created by Tracy Petrie on 5/15/17.
 //  Copyright © 2017 Tracy Petrie. All rights reserved.
 //
 
 import UIKit
 
-class ThirdViewController: UIViewController {
-    var controllerDelegate: NavigationControllerEx!
-    var photoView = UIImageView()
-    
-    convenience init(_ delegate: NavigationControllerEx) {
-        self.init(nibName: nil, bundle: nil)
-        controllerDelegate = delegate
-    }
+class NavMMViewController: MoleMapperPhotoController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
-        self.view.backgroundColor = UIColor.darkGray
         self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Prev", style: .plain,
                                                                 target: controllerDelegate,
                                                                 action: #selector(NavigationControllerEx.onPrev))
         
-        self.navigationItem.title = ""
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Done", style: .done,
+        self.navigationItem.title = "Tap to Snap"
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Next", style: .done,
                                                                  target: controllerDelegate,
-                                                                 action: #selector(NavigationControllerEx.onDone))
-        self.photoView.frame = self.view.frame
-        print("self.photoView.frame = \(self.photoView.frame)")
-        self.photoView.contentMode = .scaleAspectFit
-        self.view.addSubview(self.photoView)
+                                                                 action: #selector(NavigationControllerEx.onNext))
+        
+//        self.showControls = true
     }
 
     override func didReceiveMemoryWarning() {
@@ -41,13 +31,6 @@ class ThirdViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
-    func setPhotoToDisplay(photoImage: UIImage) {
-        print("about to implement setPhotoToDisplay")
-        print("sizes of interest:")
-        print("UIImage: \(photoImage.size)")
-        print("View frame: \(self.view.frame)")
-        self.photoView.image = photoImage
-    }
 
     /*
     // MARK: - Navigation

@@ -8,12 +8,15 @@
 
 import UIKit
 
-class StarterViewController: UIViewController {
+class StarterViewController: UIViewController, MoleMapperPhotoControllerDelegate {
 
+    var myCamera: MoleMapperPhotoController?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
+        self.view.backgroundColor = .white
     }
 
     override func didReceiveMemoryWarning() {
@@ -22,10 +25,25 @@ class StarterViewController: UIViewController {
     }
     
 
-    @IBAction func onKickit(_ sender: Any) {
+    @IBAction func onSwiftNavigationController(_ sender: Any) {
         let myNav = NavigationViewController()
         self.show(myNav, sender: nil)
     }
+
+    @IBAction func onSwiftModal(_ sender: Any) {
+        myCamera = MoleMapperPhotoController(self)
+        myCamera!.showControls = true
+        self.show(myCamera!, sender: nil)
+    }
+    
+    func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
+        
+    }
+    
+    func moleMapperPhotoControllerDidCancel(_ controller: MoleMapperPhotoController) {
+        self.myCamera?.dismiss(animated: true, completion: nil)
+    }
+
     /*
     // MARK: - Navigation
 

@@ -21,25 +21,37 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="EgW-P3-3Yc">
-                                <rect key="frame" x="155" y="318" width="65" height="30"/>
-                                <state key="normal" title="Kick it off"/>
-                                <connections>
-                                    <action selector="onKickit:" destination="oFi-99-BFr" eventType="touchUpInside" id="lX3-6E-wE6"/>
-                                </connections>
-                            </button>
-                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="U1K-DI-PWv">
-                                <rect key="frame" x="0.0" y="623" width="375" height="44"/>
-                                <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
-                                <items>
-                                    <barButtonItem title="Objective-C" id="1C1-7O-JGl"/>
-                                </items>
-                            </toolbar>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="YdE-9s-tQO">
+                                <rect key="frame" x="57" y="28" width="261" height="90"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="EgW-P3-3Yc">
+                                        <rect key="frame" x="0.0" y="0.0" width="261" height="30"/>
+                                        <state key="normal" title="Swift NavigationController embedding"/>
+                                        <connections>
+                                            <action selector="onSwiftNavigationController:" destination="oFi-99-BFr" eventType="touchUpInside" id="QBJ-Gy-WcU"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7XZ-uu-kqY">
+                                        <rect key="frame" x="63" y="30" width="135" height="30"/>
+                                        <state key="normal" title="Swift Modal Display"/>
+                                        <connections>
+                                            <action selector="onSwiftModal:" destination="oFi-99-BFr" eventType="touchUpInside" id="C6Y-DQ-gU0"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Jhg-jA-NQE">
+                                        <rect key="frame" x="39" y="60" width="183" height="30"/>
+                                        <state key="normal" title="Objective-C Modal Display"/>
+                                        <connections>
+                                            <segue destination="vv6-K1-ebf" kind="presentation" id="dwr-px-3Sp"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </stackView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
-                            <constraint firstItem="EgW-P3-3Yc" firstAttribute="centerY" secondItem="3yj-lW-D3A" secondAttribute="centerY" id="dBw-qG-QCd"/>
-                            <constraint firstItem="EgW-P3-3Yc" firstAttribute="centerX" secondItem="3yj-lW-D3A" secondAttribute="centerX" id="lvl-uG-JQY"/>
+                            <constraint firstItem="YdE-9s-tQO" firstAttribute="centerX" secondItem="3yj-lW-D3A" secondAttribute="centerX" id="3Ku-pU-UXf"/>
+                            <constraint firstItem="YdE-9s-tQO" firstAttribute="top" secondItem="5Ri-Yo-Rwt" secondAttribute="bottom" constant="8" symbolic="YES" id="5tn-Wn-FAp"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -68,10 +80,10 @@
             </objects>
             <point key="canvasLocation" x="834.39999999999998" y="-212.74362818590706"/>
         </scene>
-        <!--View Controller-->
+        <!--ObjC View Controller-->
         <scene sceneID="bjI-bs-M2U">
             <objects>
-                <viewController id="vv6-K1-ebf" sceneMemberID="viewController">
+                <viewController id="vv6-K1-ebf" customClass="ObjCViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="1Cx-FX-11y"/>
                         <viewControllerLayoutGuide type="bottom" id="7D2-02-cNX"/>
@@ -80,21 +92,45 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Third view" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="drA-IL-ENV">
-                                <rect key="frame" x="148" y="194" width="79" height="21"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="dyD-HF-n5U">
+                                <rect key="frame" x="0.0" y="623" width="375" height="44"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
+                                <items>
+                                    <barButtonItem title="Cancel" id="VXh-Ca-bzl">
+                                        <connections>
+                                            <action selector="onCancel:" destination="vv6-K1-ebf" id="7fT-xg-rFu"/>
+                                        </connections>
+                                    </barButtonItem>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="8Up-aP-zz4"/>
+                                    <barButtonItem title="Show Camera" id="Uxa-hb-d2w">
+                                        <connections>
+                                            <action selector="onCamera:" destination="vv6-K1-ebf" id="Gf9-2R-ERl"/>
+                                        </connections>
+                                    </barButtonItem>
+                                </items>
+                            </toolbar>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Objective-C Launcher" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="drA-IL-ENV">
+                                <rect key="frame" x="103" y="28" width="168" height="21"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="168" id="SXk-Er-eJM"/>
+                                    <constraint firstAttribute="height" constant="21" id="oQu-vC-Kao"/>
+                                </constraints>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="drA-IL-ENV" firstAttribute="top" secondItem="1Cx-FX-11y" secondAttribute="bottom" constant="8" id="M48-oM-hBu"/>
+                            <constraint firstItem="drA-IL-ENV" firstAttribute="centerX" secondItem="eCi-qK-1xA" secondAttribute="centerX" id="ctS-pk-TiM"/>
+                        </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="fW3-gb-KU3"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="mCN-Eg-oFj" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="834" y="539"/>
+            <point key="canvasLocation" x="-132" y="517"/>
         </scene>
     </scenes>
 </document>

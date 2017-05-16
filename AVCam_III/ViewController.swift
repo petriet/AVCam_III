@@ -29,6 +29,7 @@ class ViewController: UIViewController {
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Next", style: .done,
                                                                  target: controllerDelegate,
                                                                  action: #selector(NavigationControllerEx.onNext))
+        self.view.backgroundColor = UIColor(colorLiteralRed: 0.5, green: 0.52, blue: 0.5, alpha: 0.9)
     }
 
     override func didReceiveMemoryWarning() {

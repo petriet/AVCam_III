@@ -7,17 +7,21 @@
 //
 
 import UIKit
+//import AVFoundation
 
 // Parent Protocol
 protocol ControllerDelegate {
     func onNext()
     func onPrev()
+    func onDone()
     func onCancel()
 }
 
-extension NavigationControllerEx: ControllerDelegate {
+extension NavigationControllerEx: ControllerDelegate, MoleMapperPhotoControllerDelegate {
+    // ControllerDelegate
     internal func onCancel() {
         print("NavigationControllerEx onCancel")
+        self.dismiss(animated: true, completion: nil)
     }
 
     internal func onPrev() {
@@ -26,6 +30,19 @@ extension NavigationControllerEx: ControllerDelegate {
 
     internal func onNext() {
         print("NavigationControllerEx onPrev")
+    }
+    
+    internal func onDone() {
+        print("NavigationControllerEx onPrev")
+        self.dismiss(animated: true, completion: nil)
+    }
+    
+    // MoleMappePhotoDelegate
+    internal func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
+        print("NavigationControllerEx recievePhoto")
+    }
+    internal func moleMapperPhotoControllerDidCancel(_ controller: MoleMapperPhotoController) {
+        controller.dismiss(animated: true, completion: nil)
     }
 }
 
@@ -37,7 +54,7 @@ class NavigationViewController: NavigationControllerEx {
 
     var VC1: ViewController?
 //    var VC2: SecondViewController!
-    var VC2: CameraViewController!
+    var VC2: NavMMViewController!
     var VC3: ThirdViewController!
     var currentView = Int(1)
     
@@ -46,7 +63,8 @@ class NavigationViewController: NavigationControllerEx {
         self.init(rootViewController: tmpvc)
         VC1 = tmpvc
         VC1?.controllerDelegate = self
-        VC2 = CameraViewController(self)
+        VC2 = NavMMViewController(self)
+        VC2.letUserApprovePhoto = false
         VC3 = ThirdViewController(self)
     }
     
@@ -60,6 +78,8 @@ class NavigationViewController: NavigationControllerEx {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    // MARK: ControllerDelegate overrides
     
     // Wonky magic number navigation (this is just a super temporary vehicle to test a new camera controller)
     override func onNext() {
@@ -82,9 +102,14 @@ class NavigationViewController: NavigationControllerEx {
             currentView -= 1
         }
     }
-    override func onCancel() {
-        print("onCancel")
-        self.dismiss(animated: true, completion: nil)
+
+    // MARK: MoleMapperPhotoDelegate overrides
+    
+    override func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
+        print("moleMapperPhotoControllerDidTakePictures")
+        if displayPhoto != nil {
+            self.VC3.setPhotoToDisplay(photoImage: displayPhoto!)
+        }
     }
 
     /*
