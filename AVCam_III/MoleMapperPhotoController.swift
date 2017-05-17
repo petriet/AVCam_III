@@ -13,28 +13,34 @@ import Photos
 // MARK: MoleMapperControllerDelegate protocol
 
 @objc public protocol MoleMapperPhotoControllerDelegate {
-    func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float)
+    func moleMapperPhotoControllerDidTakePictures(_ jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float)
     func moleMapperPhotoControllerDidCancel(_ controller: MoleMapperPhotoController)
 }
 
+@objc protocol MyTestProtocol {
+    func someFunction(_ someData: Data?, aPhoto: UIImage?)
+}
 
 @objc public class MoleMapperPhotoController: UIViewController, UIGestureRecognizerDelegate {
     
-    // TODO: sort these vars
     static private let queueName = "edu.ohsu.molemapper.photoQ"
     
-    var takePhotoFlag = false
-    var lastLensPosition: Float = -1.0
-    var lensPositionNotificationsCount = 0
-    var currentCameraPosition: AVCaptureDevicePosition = AVCaptureDevicePosition.unspecified
-    private let videoDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .unspecified)!
-    
-    
-    var acceptViewer: AcceptViewController?
-    var acceptingPhotoCaptureDelegateObjectID: Int64 = 0
-
-    private let photoOutput = AVCapturePhotoOutput()
+    private var acceptViewer: AcceptViewController?
+    private var acceptingPhotoCaptureDelegateObjectID: Int64 = 0
+    private var currentCameraPosition: AVCaptureDevicePosition = AVCaptureDevicePosition.unspecified
     private var inProgressPhotoCaptureDelegates = [Int64 : PhotoCaptureDelegate]()
+    private var isSessionRunning = false
+    private var lastLensPosition: Float = -1.0
+    private var lensPositionNotificationsCount = 0
+    private let photoOutput = AVCapturePhotoOutput()
+    private var previewView: PreviewView!
+    private let session = AVCaptureSession()
+    private let sessionQueue = DispatchQueue(label: queueName, attributes: [], target: nil) // Communicate with the session and other session objects on this queue.
+    private var setupResult: SessionSetupResult = .success
+    private var takePhotoFlag = false
+    private let videoDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .unspecified)!
+    private var videoDeviceInput: AVCaptureDeviceInput!
+    
     
     private enum SessionSetupResult {
         case success
@@ -42,21 +48,15 @@ import Photos
         case configurationFailed
     }
     
-    private let session = AVCaptureSession()
-    private var isSessionRunning = false
-    private let sessionQueue = DispatchQueue(label: queueName, attributes: [], target: nil) // Communicate with the session and other session objects on this queue.
-    private var setupResult: SessionSetupResult = .success
-    var videoDeviceInput: AVCaptureDeviceInput!
-    
+    // MARK: Properties
     
     var controllerDelegate: MoleMapperPhotoControllerDelegate!
-    var previewView: PreviewView!
     var showControls = false
     var letUserApprovePhoto = true
     
     // MARK: View Controller Life Cycle
     
-    convenience init(_ delegate: MoleMapperPhotoControllerDelegate) {
+    convenience init(withDelegate delegate: MoleMapperPhotoControllerDelegate) {
         self.init(nibName: nil, bundle: nil)
         controllerDelegate = delegate
     }
@@ -157,31 +157,13 @@ import Photos
 		*/
 		sessionQueue.async { [unowned self] in
 			self.configureSession()
-            print("configured session")
 		}
 	}
 	
 	override public func viewWillAppear(_ animated: Bool) {
 		super.viewWillAppear(animated)
         
-        // Debug query
-        print("viewWillAppear")
-		
 		sessionQueue.async { [unowned self] in
-            let sinputs = self.session.inputs
-            let soutputs = self.session.outputs
-            if sinputs != nil {
-                print("inputs count: \(sinputs!.count)")
-            } else {
-                print("no inputs")
-            }
-            if soutputs != nil {
-                print("outputs count: \(soutputs!.count)")
-            } else {
-                print("no outputs")
-            }
-            print("session running status:  \(self.session.isRunning)")
-
             switch self.setupResult {
                 case .success:
 				    // Only setup observers and start the session running if setup succeeded.
@@ -202,7 +184,6 @@ import Photos
                     } catch {
                         print(error.localizedDescription)
                     }
-                    print("after calling startRunning: \(self.isSessionRunning)")
 				
                 case .notAuthorized:
                     DispatchQueue.main.async { [unowned self] in
@@ -247,14 +228,12 @@ import Photos
     // MARK: Delegate Handlers
 	
     func onUsePhoto() {
-        print("onUsePhoto")
-        // TODO: actually transmit data to caller
         if self.acceptViewer != nil {
             self.acceptViewer?.dismiss(animated: true, completion: {self.acceptViewer = nil})
         }
         self.sessionQueue.async { [unowned self] in
             if let photoCaptureDelegate = self.inProgressPhotoCaptureDelegates[self.acceptingPhotoCaptureDelegateObjectID] {
-                self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(jpegData: photoCaptureDelegate.photoData,
+                self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(photoCaptureDelegate.photoData,
                                                                              displayPhoto: photoCaptureDelegate.displayImage,
                                                                              lensPosition: self.lastLensPosition)
             }
@@ -263,7 +242,6 @@ import Photos
     }
     
     func onRetake() {
-        print("onRetake")
         if self.acceptViewer != nil {
             self.sessionQueue.async { [unowned self] in
                 self.inProgressPhotoCaptureDelegates[self.acceptingPhotoCaptureDelegateObjectID] = nil
@@ -313,9 +291,6 @@ import Photos
 			if session.canAddInput(videoDeviceInput) {
 				session.addInput(videoDeviceInput)
 				self.videoDeviceInput = videoDeviceInput
-//                videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
-//                videoDeviceInput.device.addObserver(self, forKeyPath: "lensPosition", options: .new, context: nil)
-
                 self.previewView.videoPreviewLayer.connection.videoOrientation = .portrait
 			}
 			else {
@@ -324,16 +299,6 @@ import Photos
 				session.commitConfiguration()
 				return
 			}
-//            do {
-//                if defaultVideoDevice!.hasTorch {
-//                    try defaultVideoDevice!.lockForConfiguration()
-//                    defaultVideoDevice!.torchMode = .on
-//                    defaultVideoDevice!.unlockForConfiguration()
-//                }
-//            } catch {
-//                print(error.localizedDescription)
-//            }
-            
 		}
 		catch {
 			print("Could not create video device input: \(error)")
@@ -406,7 +371,6 @@ import Photos
 						
 						NotificationCenter.default.addObserver(self, selector: #selector(self.subjectAreaDidChange), name: Notification.Name("AVCaptureDeviceSubjectAreaDidChangeNotification"), object: videoDeviceInput.device)
                         
-//                        print("adding adjustingFocus observation to videoDeviceInput")
                         currentVideoDevice!.removeObserver(self, forKeyPath: "adjustingFocus")
                         currentVideoDevice!.removeObserver(self, forKeyPath: "lensPosition")
                         videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
@@ -436,7 +400,6 @@ import Photos
             let devicePoint = self.previewView.videoPreviewLayer.captureDevicePointOfInterest(for: gestureRecognizer.location(in: gestureRecognizer.view))
             focus(with: .autoFocus, exposureMode: .autoExpose, at: devicePoint, monitorSubjectAreaChange: true)
             takePhotoFlag = true
-            print("set takePhotoFlag")
         } else {
             capturePhoto()
         }
@@ -446,7 +409,6 @@ import Photos
 		sessionQueue.async { [unowned self] in
 			if let device = self.videoDeviceInput.device {
 				do {
-                    print("focus")
 					try device.lockForConfiguration()
 					
 					/*
@@ -507,14 +469,7 @@ import Photos
 
             // Use a separate object for the photo capture delegate to isolate each capture life cycle.
 			let photoCaptureDelegate = PhotoCaptureDelegate(with: photoSettings, willCapturePhotoAnimation: {
-/*
-					DispatchQueue.main.async { [unowned self] in
-						self.previewView.videoPreviewLayer.opacity = 0
-						UIView.animate(withDuration: 0.25) { [unowned self] in
-							self.previewView.videoPreviewLayer.opacity = 1
-						}
-					}
- */
+                    // Pushed until after the capture is complete
 				}, completed: { [unowned self] photoCaptureDelegate in
                     // Animation should occur _after_ the focus + snapshot
                     DispatchQueue.main.async { [unowned self] in
@@ -522,14 +477,6 @@ import Photos
                         UIView.animate(withDuration: 0.25) { [unowned self] in
                             self.previewView.videoPreviewLayer.opacity = 1
                         }
-                    }
-                    print("\(photoCaptureDelegate.photoData?.count)")
-                    print("lensposition: \(self.lastLensPosition)")
-                    if photoCaptureDelegate.photoData == nil {
-                        print("Photo Data is nil")
-                    }
-                    if photoCaptureDelegate.displayImage == nil {
-                        print("display image is nil")
                     }
                     if self.letUserApprovePhoto {
                         DispatchQueue.main.async { [unowned self] in
@@ -539,15 +486,12 @@ import Photos
                         }
                     } else {
                         self.sessionQueue.async { [unowned self] in
-                            self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(jpegData: photoCaptureDelegate.photoData,
+                            self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(photoCaptureDelegate.photoData,
                                                                                      displayPhoto: photoCaptureDelegate.displayImage,
                                                                                      lensPosition: self.lastLensPosition)
                             self.inProgressPhotoCaptureDelegates[photoCaptureDelegate.requestedPhotoSettings.uniqueID] = nil
                         }
                     }
-//					self.sessionQueue.async { [unowned self] in
-//						self.inProgressPhotoCaptureDelegates[photoCaptureDelegate.requestedPhotoSettings.uniqueID] = nil
-//					}
 				}
 			)
 			
@@ -557,7 +501,6 @@ import Photos
 				until the capture is completed.
 			*/
 			self.inProgressPhotoCaptureDelegates[photoCaptureDelegate.requestedPhotoSettings.uniqueID] = photoCaptureDelegate
-            print("call photoOutput.capturePhoto")
 			self.photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureDelegate)
 		}
 	}
@@ -614,12 +557,9 @@ import Photos
 
 */
             if let focusingState = change?[.newKey] as! Bool? {
-                if focusingState {
-                    print("focusing")
-                } else {
-                    print("focused")
+                if !focusingState {
                     if takePhotoFlag {
-                        if lensPositionNotificationsCount > 3 {
+                        if lensPositionNotificationsCount > 3 {     // Seem to get YES..NO...YES...lensPos lensPos...NO sequence
                             takePhotoFlag = false
                             capturePhoto()
                         }
@@ -628,7 +568,6 @@ import Photos
             }
         } else if keyPath == "lensPosition" {
             if let lensPosition = change?[.newKey] as! Float? {
-                print("new lens position: \(lensPosition)")
                 lastLensPosition = lensPosition
                 lensPositionNotificationsCount += 1
             }
@@ -681,43 +620,3 @@ import Photos
 	}
 }
 
-/*
-extension UIDeviceOrientation {
-    var videoOrientation: AVCaptureVideoOrientation? {
-        switch self {
-            case .portrait: return .portrait
-            case .portraitUpsideDown: return .portrait
-            case .landscapeLeft: return .portrait
-            case .landscapeRight: return .portrait
-            default: return nil
-        }
-    }
-}
-
-extension UIInterfaceOrientation {
-    var videoOrientation: AVCaptureVideoOrientation? {
-        switch self {
-            case .portrait: return .portrait
-            case .portraitUpsideDown: return .portrait
-            case .landscapeLeft: return .portrait
-            case .landscapeRight: return .portrait
-            default: return nil
-        }
-    }
-}
-
-
-extension AVCaptureDeviceDiscoverySession {
-	func uniqueDevicePositionsCount() -> Int {
-		var uniqueDevicePositions = [AVCaptureDevicePosition]()
-		
-		for device in devices {
-			if !uniqueDevicePositions.contains(device.position) {
-				uniqueDevicePositions.append(device.position)
-			}
-		}
-		
-		return uniqueDevicePositions.count
-	}
-}
- */

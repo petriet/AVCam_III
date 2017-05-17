@@ -38,7 +38,7 @@ extension NavigationControllerEx: ControllerDelegate, MoleMapperPhotoControllerD
     }
     
     // MoleMappePhotoDelegate
-    internal func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
+    internal func moleMapperPhotoControllerDidTakePictures(_ jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
         print("NavigationControllerEx recievePhoto")
     }
     internal func moleMapperPhotoControllerDidCancel(_ controller: MoleMapperPhotoController) {
@@ -63,7 +63,7 @@ class NavigationViewController: NavigationControllerEx {
         self.init(rootViewController: tmpvc)
         VC1 = tmpvc
         VC1?.controllerDelegate = self
-        VC2 = NavMMViewController(self)
+        VC2 = NavMMViewController(withDelegate: self)
         VC2.letUserApprovePhoto = false
         VC3 = ThirdViewController(self)
     }
@@ -105,7 +105,7 @@ class NavigationViewController: NavigationControllerEx {
 
     // MARK: MoleMapperPhotoDelegate overrides
     
-    override func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
+    override func moleMapperPhotoControllerDidTakePictures(_ jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
         print("moleMapperPhotoControllerDidTakePictures")
         if displayPhoto != nil {
             self.VC3.setPhotoToDisplay(photoImage: displayPhoto!)

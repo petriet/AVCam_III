@@ -33,7 +33,6 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
 	}
 	
 	func capture(_ captureOutput: AVCapturePhotoOutput, willCapturePhotoForResolvedSettings resolvedSettings: AVCaptureResolvedPhotoSettings) {
-        print("resolvedSettings.previewDimensions = \(resolvedSettings.previewDimensions)")
 		willCapturePhotoAnimation()
 	}
 	
@@ -46,11 +45,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
                     let context = CIContext()
                     
                     let imageRect = CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-                    print("capture imageRect: \(imageRect)")
-                    print("UIScreen.main.scale: \(UIScreen.main.scale)")
-                    
                     if let image = context.createCGImage(ciImage, from: imageRect) {
-//                        self.displayImage = UIImage(cgImage: image, scale: UIScreen.main.scale, orientation: .right)
                         self.displayImage = UIImage(cgImage: image, scale: 1.0, orientation: .right)
                     }
                 }
@@ -74,23 +69,24 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
 			return
 		}
 		
-		PHPhotoLibrary.requestAuthorization { [unowned self] status in
-			if status == .authorized {
-				PHPhotoLibrary.shared().performChanges({ [unowned self] in
-						let creationRequest = PHAssetCreationRequest.forAsset()
-						creationRequest.addResource(with: .photo, data: photoData, options: nil)
-										
-                    }, completionHandler: { [unowned self] success, error in
-						if let error = error {
-							print("Error occurered while saving photo to photo library: \(error)")
-						}
-						self.didFinish()
-					}
-				)
-			}
-			else {
-				self.didFinish()
-			}
-		}
+//		PHPhotoLibrary.requestAuthorization { [unowned self] status in
+//			if status == .authorized {
+//				PHPhotoLibrary.shared().performChanges({ [unowned self] in
+//						let creationRequest = PHAssetCreationRequest.forAsset()
+//						creationRequest.addResource(with: .photo, data: photoData, options: nil)
+//										
+//                    }, completionHandler: { [unowned self] success, error in
+//						if let error = error {
+//							print("Error occurered while saving photo to photo library: \(error)")
+//						}
+//						self.didFinish()
+//					}
+//				)
+//			}
+//			else {
+//				self.didFinish()
+//			}
+//		}
+        didFinish()
 	}
 }

@@ -44,7 +44,6 @@ class AcceptViewController: ViewController {
         controlToolbar.tintColor = .white
         controlToolbar.barTintColor = .black
         adjustedFrame.size.height -= controlToolbar.bounds.height
-        controlToolbar.backgroundColor = .black
         let retakeButton = UIBarButtonItem(title: "Retake", style: .plain,
                                            target: photoControllerDelegate,
                                            action: #selector(MoleMapperPhotoController.onRetake))
@@ -67,14 +66,4 @@ class AcceptViewController: ViewController {
         // Dispose of any resources that can be recreated.
     }
     
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }

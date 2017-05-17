@@ -8,6 +8,21 @@
 
 #import "ObjCViewController.h"
 
+
+//@objc protocol MyTestProtocol {
+//    func someFunction(_ someData: Data?, aPhoto: UIImage?)
+//}
+//@protocol MyTestProtocol;
+@interface MyTestProtocolImpl: UIView <MyTestProtocol>
+@end
+
+@implementation MyTestProtocolImpl
+-(void)someFunction:(NSData*)someData aPhoto:(UIImage*)aPhoto {
+    NSLog(@"Whatever");
+}
+@end
+
+
 @interface ObjCViewController ()
 @property MoleMapperPhotoController *cameraController;
 @end
@@ -18,7 +33,7 @@
     [self dismissViewControllerAnimated: true completion: nil ];
 }
 - (IBAction)onCamera:(id)sender {
-    self.cameraController = [[MoleMapperPhotoController alloc] init];
+    self.cameraController = [[MoleMapperPhotoController alloc] initWithDelegate:(id<MoleMapperPhotoControllerDelegate>)self];
     self.cameraController.showControls = true;
     
     [self showViewController: self.cameraController sender:self];
@@ -36,7 +51,9 @@
 
 #pragma mark - MoleMapperPhotoControllerDelegate
 
-- (void)moleMapperPhotoControllerDidTakePictures:(NSData*)jpegData displayPhoto: (UIImage*) displayPhoto lensPosition: (float) lensPosition
+- (void)moleMapperPhotoControllerDidTakePictures:(NSData*)jpegData
+                                    displayPhoto: (UIImage*)displayPhoto
+                                    lensPosition: (float) lensPosition
 {
     if (jpegData != NULL) {
         NSLog(@"jpeg data has %lu bytes", (unsigned long)[jpegData length]);
@@ -46,6 +63,8 @@
 
 - (void)moleMapperPhotoControllerDidCancel:(MoleMapperPhotoController*)controller
 {
+    NSLog(@"ObjC moleMapperPhotoControllerDidCancel");
+
     [[self cameraController] dismissViewControllerAnimated:true completion:nil];
 }
 

@@ -31,12 +31,12 @@ class StarterViewController: UIViewController, MoleMapperPhotoControllerDelegate
     }
 
     @IBAction func onSwiftModal(_ sender: Any) {
-        myCamera = MoleMapperPhotoController(self)
+        myCamera = MoleMapperPhotoController(withDelegate: self)
         myCamera!.showControls = true
         self.show(myCamera!, sender: nil)
     }
     
-    func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
+    func moleMapperPhotoControllerDidTakePictures(_ jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
         print("StarterViewController : moleMapperPhotoControllerDidTakePictures")
         self.myCamera?.dismiss(animated: true, completion: nil)
     }

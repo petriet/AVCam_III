@@ -10,10 +10,10 @@
 #import "AVCam_III-Swift.h"
 
 // http://stackoverflow.com/questions/36629829/using-an-implementation-of-a-swift-protocol-within-obj-c
-@protocol MoleMapperPhotoControllerDelegate;
+//@protocol MoleMapperPhotoControllerDelegate;
 
 
 @interface ObjCViewController : UIViewController <MoleMapperPhotoControllerDelegate>
-- (void)moleMapperPhotoControllerDidTakePictures:(NSData*)jpegData displayPhoto: (UIImage*) displayPhoto;
-- (void)moleMapperPhotoControllerDidCancel:(MoleMapperPhotoController*)controller;
+//- (void)moleMapperPhotoControllerDidTakePicturesWithJpegData:(NSData*)jpegData displayPhoto: (UIImage*) displayPhoto;
+//- (void)moleMapperPhotoControllerDidCancel:(MoleMapperPhotoController*)controller;
 @end
