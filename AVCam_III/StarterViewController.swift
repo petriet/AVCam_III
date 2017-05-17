@@ -37,7 +37,8 @@ class StarterViewController: UIViewController, MoleMapperPhotoControllerDelegate
     }
     
     func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float) {
-        
+        print("StarterViewController : moleMapperPhotoControllerDidTakePictures")
+        self.myCamera?.dismiss(animated: true, completion: nil)
     }
     
     func moleMapperPhotoControllerDidCancel(_ controller: MoleMapperPhotoController) {

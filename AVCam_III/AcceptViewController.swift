@@ -27,6 +27,7 @@ class AcceptViewController: ViewController {
         self.view.backgroundColor = .white
         let imageView = UIImageView()
         imageView.backgroundColor = .black
+        imageView.contentMode = .scaleAspectFit
         
         var offset = CGFloat(0.0)
         if let nav = self.navigationController {

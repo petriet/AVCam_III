@@ -10,7 +10,7 @@ import UIKit
 import AVFoundation
 import Photos
 
-// Constant string IDs ala UIImagePickerController interface
+// MARK: MoleMapperControllerDelegate protocol
 
 @objc public protocol MoleMapperPhotoControllerDelegate {
     func moleMapperPhotoControllerDidTakePictures(jpegData: Data?, displayPhoto: UIImage?, lensPosition: Float)
@@ -20,20 +20,41 @@ import Photos
 
 @objc public class MoleMapperPhotoController: UIViewController, UIGestureRecognizerDelegate {
     
+    // TODO: sort these vars
     static private let queueName = "edu.ohsu.molemapper.photoQ"
     
     var takePhotoFlag = false
     var lastLensPosition: Float = -1.0
     var lensPositionNotificationsCount = 0
     var currentCameraPosition: AVCaptureDevicePosition = AVCaptureDevicePosition.unspecified
+    private let videoDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .unspecified)!
+    
     
     var acceptViewer: AcceptViewController?
+    var acceptingPhotoCaptureDelegateObjectID: Int64 = 0
+
+    private let photoOutput = AVCapturePhotoOutput()
+    private var inProgressPhotoCaptureDelegates = [Int64 : PhotoCaptureDelegate]()
     
-	// MARK: View Controller Life Cycle
+    private enum SessionSetupResult {
+        case success
+        case notAuthorized
+        case configurationFailed
+    }
+    
+    private let session = AVCaptureSession()
+    private var isSessionRunning = false
+    private let sessionQueue = DispatchQueue(label: queueName, attributes: [], target: nil) // Communicate with the session and other session objects on this queue.
+    private var setupResult: SessionSetupResult = .success
+    var videoDeviceInput: AVCaptureDeviceInput!
+    
+    
     var controllerDelegate: MoleMapperPhotoControllerDelegate!
     var previewView: PreviewView!
     var showControls = false
     var letUserApprovePhoto = true
+    
+    // MARK: View Controller Life Cycle
     
     convenience init(_ delegate: MoleMapperPhotoControllerDelegate) {
         self.init(nibName: nil, bundle: nil)
@@ -83,21 +104,6 @@ import Photos
                                                        action: #selector(MoleMapperPhotoController.focusAndExposeTap(gestureRecognizer:)))
         gestureRecognizer.delegate = self
         self.view.addGestureRecognizer(gestureRecognizer)
-    }
-    
-    func onUsePhoto() {
-        print("onUsePhoto")
-        // TODO: actually transmit data to caller
-        if self.acceptViewer != nil {
-            self.acceptViewer?.dismiss(animated: true, completion: {self.acceptViewer = nil})
-        }
-    }
-    
-    func onRetake() {
-        print("onUsePhoto")
-        if self.acceptViewer != nil {
-            self.acceptViewer?.dismiss(animated: true, completion: {self.acceptViewer = nil})
-        }
     }
     
     override public func viewDidLoad() {
@@ -151,19 +157,52 @@ import Photos
 		*/
 		sessionQueue.async { [unowned self] in
 			self.configureSession()
+            print("configured session")
 		}
 	}
 	
 	override public func viewWillAppear(_ animated: Bool) {
 		super.viewWillAppear(animated)
+        
+        // Debug query
+        print("viewWillAppear")
 		
-		sessionQueue.async {
-			switch self.setupResult {
+		sessionQueue.async { [unowned self] in
+            let sinputs = self.session.inputs
+            let soutputs = self.session.outputs
+            if sinputs != nil {
+                print("inputs count: \(sinputs!.count)")
+            } else {
+                print("no inputs")
+            }
+            if soutputs != nil {
+                print("outputs count: \(soutputs!.count)")
+            } else {
+                print("no outputs")
+            }
+            print("session running status:  \(self.session.isRunning)")
+
+            switch self.setupResult {
                 case .success:
 				    // Only setup observers and start the session running if setup succeeded.
                     self.addObservers()
                     self.session.startRunning()
                     self.isSessionRunning = self.session.isRunning
+                    do {
+                        if let device = self.videoDeviceInput.device {
+                            if device.hasTorch {
+                                try device.lockForConfiguration()
+                                if device.isExposureModeSupported(.continuousAutoExposure) {
+                                    device.exposureMode = .continuousAutoExposure
+                                }
+                                device.torchMode = .on
+                                device.unlockForConfiguration()
+                            }
+                        }
+                    } catch {
+                        print(error.localizedDescription)
+                    }
+                    print("after calling startRunning: \(self.isSessionRunning)")
 				
                 case .notAuthorized:
                     DispatchQueue.main.async { [unowned self] in
@@ -204,24 +243,39 @@ import Photos
     override public var supportedInterfaceOrientations: UIInterfaceOrientationMask {
 		return .portrait
 	}
+    
+    // MARK: Delegate Handlers
 	
+    func onUsePhoto() {
+        print("onUsePhoto")
+        // TODO: actually transmit data to caller
+        if self.acceptViewer != nil {
+            self.acceptViewer?.dismiss(animated: true, completion: {self.acceptViewer = nil})
+        }
+        self.sessionQueue.async { [unowned self] in
+            if let photoCaptureDelegate = self.inProgressPhotoCaptureDelegates[self.acceptingPhotoCaptureDelegateObjectID] {
+                self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(jpegData: photoCaptureDelegate.photoData,
+                                                                             displayPhoto: photoCaptureDelegate.displayImage,
+                                                                             lensPosition: self.lastLensPosition)
+            }
+            self.inProgressPhotoCaptureDelegates[self.acceptingPhotoCaptureDelegateObjectID] = nil
+        }
+    }
+    
+    func onRetake() {
+        print("onRetake")
+        if self.acceptViewer != nil {
+            self.sessionQueue.async { [unowned self] in
+                self.inProgressPhotoCaptureDelegates[self.acceptingPhotoCaptureDelegateObjectID] = nil
+            }
+            self.acceptViewer?.dismiss(animated: true, completion: {self.acceptViewer = nil})
+            // Dismissing modal VC returns to us and causes a viewWillAppear call which
+            // resets the camera session and observers
+        }
+    }
+    
+    
 	// MARK: Session Management
-	
-	private enum SessionSetupResult {
-		case success
-		case notAuthorized
-		case configurationFailed
-	}
-	
-	private let session = AVCaptureSession()
-	
-	private var isSessionRunning = false
-	
-	private let sessionQueue = DispatchQueue(label: queueName, attributes: [], target: nil) // Communicate with the session and other session objects on this queue.
-	
-	private var setupResult: SessionSetupResult = .success
-	
-	var videoDeviceInput: AVCaptureDeviceInput!
 	
 	
 	// Call this on the session queue.
@@ -259,8 +313,8 @@ import Photos
 			if session.canAddInput(videoDeviceInput) {
 				session.addInput(videoDeviceInput)
 				self.videoDeviceInput = videoDeviceInput
-                videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
-                videoDeviceInput.device.addObserver(self, forKeyPath: "lensPosition", options: .new, context: nil)
+//                videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
+//                videoDeviceInput.device.addObserver(self, forKeyPath: "lensPosition", options: .new, context: nil)
 
                 self.previewView.videoPreviewLayer.connection.videoOrientation = .portrait
 			}
@@ -270,15 +324,15 @@ import Photos
 				session.commitConfiguration()
 				return
 			}
-            do {
-                if defaultVideoDevice!.hasTorch {
-                    try defaultVideoDevice!.lockForConfiguration()
-                    defaultVideoDevice!.torchMode = .on
-                    defaultVideoDevice!.unlockForConfiguration()
-                }
-            } catch {
-                print(error.localizedDescription)
-            }
+//            do {
+//                if defaultVideoDevice!.hasTorch {
+//                    try defaultVideoDevice!.lockForConfiguration()
+//                    defaultVideoDevice!.torchMode = .on
+//                    defaultVideoDevice!.unlockForConfiguration()
+//                }
+//            } catch {
+//                print(error.localizedDescription)
+//            }
             
 		}
 		catch {
@@ -304,34 +358,8 @@ import Photos
 		
 		session.commitConfiguration()
 	}
-	
-	private func resumeInterruptedSession(_ resumeButton: UIButton)
-	{
-		sessionQueue.async { [unowned self] in
-			/*
-				The session might fail to start running, e.g., if a phone or FaceTime call is still
-				using audio or video. A failure to start the session running will be communicated via
-				a session runtime error notification. To avoid repeatedly failing to start the session
-				running, we only try to restart the session running in the session runtime error handler
-				if we aren't trying to resume the session running.
-			*/
-			self.session.startRunning()
-			self.isSessionRunning = self.session.isRunning
-			if !self.session.isRunning {
-				DispatchQueue.main.async { [unowned self] in
-					let message = NSLocalizedString("Unable to resume", comment: "Alert message when unable to resume the session running")
-					let alertController = UIAlertController(title: "MoleMapper", message: message, preferredStyle: .alert)
-					let cancelAction = UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"), style: .cancel, handler: nil)
-					alertController.addAction(cancelAction)
-					self.present(alertController, animated: true, completion: nil)
-				}
-			}
-		}
-	}
-		
+			
 	// MARK: Device Configuration
-	
-	private let videoDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .unspecified)!
 	
     func changeCamera() {
 		
@@ -430,9 +458,9 @@ import Photos
 						device.focusMode = focusMode
 					}
 					
-					if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(exposureMode) {
+					if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.continuousAutoExposure) {
 						device.exposurePointOfInterest = devicePoint
-						device.exposureMode = exposureMode
+						device.exposureMode = .continuousAutoExposure
 					}
 					
 					device.isSubjectAreaChangeMonitoringEnabled = monitorSubjectAreaChange
@@ -447,10 +475,6 @@ import Photos
 	
 	// MARK: Capturing Photos
 
-	private let photoOutput = AVCapturePhotoOutput()
-	
-	private var inProgressPhotoCaptureDelegates = [Int64 : PhotoCaptureDelegate]()
-	
 	func capturePhoto() {
 		/*
 			Retrieve the video preview layer's video orientation on the main queue before
@@ -492,6 +516,7 @@ import Photos
 					}
  */
 				}, completed: { [unowned self] photoCaptureDelegate in
+                    // Animation should occur _after_ the focus + snapshot
                     DispatchQueue.main.async { [unowned self] in
                         self.previewView.videoPreviewLayer.opacity = 0
                         UIView.animate(withDuration: 0.25) { [unowned self] in
@@ -508,20 +533,21 @@ import Photos
                     }
                     if self.letUserApprovePhoto {
                         DispatchQueue.main.async { [unowned self] in
+                            self.acceptingPhotoCaptureDelegateObjectID = photoCaptureDelegate.requestedPhotoSettings.uniqueID
                             self.acceptViewer = AcceptViewController(with: self, image: photoCaptureDelegate.displayImage!)
+                            self.show(self.acceptViewer!, sender: self)
                         }
                     } else {
-                        self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(jpegData: photoCaptureDelegate.photoData,
+                        self.sessionQueue.async { [unowned self] in
+                            self.controllerDelegate.moleMapperPhotoControllerDidTakePictures(jpegData: photoCaptureDelegate.photoData,
                                                                                      displayPhoto: photoCaptureDelegate.displayImage,
                                                                                      lensPosition: self.lastLensPosition)
-                    }// When the capture is complete, remove a reference to the photo capture delegate so it can be deallocated.
-                    // TODO: follow the memory trail -- does jpegData get stuck in a circular reference (can't declare as weak var)
-                    
-                    // TODO: verify the viability of the photoCaptureDelegate object within the above AcceptViewController context
-                    // and possibly move this to a queue to be de-allocated on viewWillDisappear.
-					self.sessionQueue.async { [unowned self] in
-						self.inProgressPhotoCaptureDelegates[photoCaptureDelegate.requestedPhotoSettings.uniqueID] = nil
-					}
+                            self.inProgressPhotoCaptureDelegates[photoCaptureDelegate.requestedPhotoSettings.uniqueID] = nil
+                        }
+                    }
+//					self.sessionQueue.async { [unowned self] in
+//						self.inProgressPhotoCaptureDelegates[photoCaptureDelegate.requestedPhotoSettings.uniqueID] = nil
+//					}
 				}
 			)
 			
@@ -542,6 +568,10 @@ import Photos
 	
 	private func addObservers() {
 		session.addObserver(self, forKeyPath: "running", options: .new, context: &sessionRunningObserveContext)
+        if self.videoDeviceInput != nil {
+            self.videoDeviceInput.device.addObserver(self, forKeyPath: "adjustingFocus", options: .new, context: nil)
+            self.videoDeviceInput.device.addObserver(self, forKeyPath: "lensPosition", options: .new, context: nil)
+        }
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(subjectAreaDidChange), name: Notification.Name("AVCaptureDeviceSubjectAreaDidChangeNotification"), object: videoDeviceInput.device)
 		NotificationCenter.default.addObserver(self, selector: #selector(sessionRuntimeError), name: Notification.Name("AVCaptureSessionRuntimeErrorNotification"), object: session)
@@ -569,12 +599,10 @@ import Photos
     }
 	
 	override public func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-//        print("value \(keyPath) observed")
 		if context == &sessionRunningObserveContext {
 			let newValue = change?[.newKey] as AnyObject?
             
             if keyPath == "running" {
-//                print("observed running")
                 guard let isSessionRunning = newValue?.boolValue else { return }
             }
         } else if keyPath == "adjustingFocus" {
@@ -587,13 +615,12 @@ import Photos
 */
             if let focusingState = change?[.newKey] as! Bool? {
                 if focusingState {
-//                    print("focusing")
+                    print("focusing")
                 } else {
-//                    print("focused")
+                    print("focused")
                     if takePhotoFlag {
                         if lensPositionNotificationsCount > 3 {
                             takePhotoFlag = false
-//                            print("calling capturePhoto() finally")
                             capturePhoto()
                         }
                     }
@@ -601,7 +628,7 @@ import Photos
             }
         } else if keyPath == "lensPosition" {
             if let lensPosition = change?[.newKey] as! Float? {
-//                print("new lens position: \(lensPosition)")
+                print("new lens position: \(lensPosition)")
                 lastLensPosition = lensPosition
                 lensPositionNotificationsCount += 1
             }
