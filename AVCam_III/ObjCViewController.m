@@ -9,20 +9,6 @@
 #import "ObjCViewController.h"
 
 
-//@objc protocol MyTestProtocol {
-//    func someFunction(_ someData: Data?, aPhoto: UIImage?)
-//}
-//@protocol MyTestProtocol;
-@interface MyTestProtocolImpl: UIView <MyTestProtocol>
-@end
-
-@implementation MyTestProtocolImpl
--(void)someFunction:(NSData*)someData aPhoto:(UIImage*)aPhoto {
-    NSLog(@"Whatever");
-}
-@end
-
-
 @interface ObjCViewController ()
 @property MoleMapperPhotoController *cameraController;
 @end
@@ -67,15 +53,5 @@
 
     [[self cameraController] dismissViewControllerAnimated:true completion:nil];
 }
-
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 @end

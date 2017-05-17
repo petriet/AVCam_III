@@ -14,6 +14,5 @@
 
 
 @interface ObjCViewController : UIViewController <MoleMapperPhotoControllerDelegate>
-//- (void)moleMapperPhotoControllerDidTakePicturesWithJpegData:(NSData*)jpegData displayPhoto: (UIImage*) displayPhoto;
-//- (void)moleMapperPhotoControllerDidCancel:(MoleMapperPhotoController*)controller;
+
 @end
